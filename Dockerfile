@@ -59,15 +59,15 @@ LABEL \
     org.opencontainers.image.version=${BUILD_VERSION}
 
 # Expose port
-EXPOSE 3000
+EXPOSE 9123
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3000/api/health || exit 1
+    CMD curl -f http://localhost:9123/api/health || exit 1
 
 # Set environment variables and run the app
 ENV DATABASE_PATH="/data/chores.db" \
-    PORT="3000" \
+    PORT="9123" \
     NODE_ENV="production" \
     HASSIO="true"
 
