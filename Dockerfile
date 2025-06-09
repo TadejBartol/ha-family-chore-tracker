@@ -24,10 +24,13 @@ COPY package*.json ./
 # Install app dependencies (use npm install instead of npm ci)
 RUN npm install --only=production --no-audit --no-fund
 
-# Copy app source
+# Copy app source  
 COPY backend.js ./
 COPY public ./public/
 COPY run.sh ./
+
+# Force rebuild of run.sh layer
+RUN echo "Rebuild for run.sh v1.1.0"
 
 # Create data directory for persistent storage
 RUN mkdir -p /data
