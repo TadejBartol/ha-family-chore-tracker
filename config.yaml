@@ -1,6 +1,6 @@
 name: "Family Chore Tracker"
 description: "A comprehensive family chore management system with points, rewards, and statistics"
-version: "1.0.9"
+version: "1.1.0"
 slug: "family-chore-tracker"
 init: false
 arch:
