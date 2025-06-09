@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sledilnik Opravil - Slovenska aplikacija z večimi uporabniki</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-header">
+                <h1><i class="fas fa-star"></i> Sledilnik Opravil</h1>
+                <p>Prijavite se za nadaljevanje</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="username">Uporabniško ime</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Geslo</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Prijava
+                </button>
+                <div id="loginError" class="error-message" style="display: none;"></div>
+            </form>
+            <div class="login-info">
+                <p><strong>Privzeti admin račun:</strong></p>
+                <p>Uporabniško ime: <code>admin</code></p>
+                <p>Geslo: <code>admin123</code></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="container" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">
+                    <i class="fas fa-star"></i>
+                    Sledilnik Opravil
+                </h1>
+                <div class="header-info">
+                    <div class="points-display">
+                        <div class="points-card">
+                            <i class="fas fa-coins"></i>
+                            <span id="totalPoints">0</span> točk
+                        </div>
+                    </div>
+                    <div class="user-info">
+                        <span id="userName">Uporabnik</span>
+                        <span id="userRole" class="user-role">vloga</span>
+                        <button id="logoutBtn" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Odjava
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="navigation">
+            <div class="nav-buttons">
+                <button class="nav-btn active" data-section="dashboard">
+                    <i class="fas fa-chart-pie"></i>
+                    Nadzorna plošča
+                </button>
+                <button class="nav-btn" data-section="chores">
+                    <i class="fas fa-tasks"></i>
+                    Moja opravila
+                </button>
+                <button class="nav-btn" data-section="rewards">
+                    <i class="fas fa-gift"></i>
+                    Nagrade
+                </button>
+                <button class="nav-btn" data-section="statistics">
+                    <i class="fas fa-chart-bar"></i>
+                    Statistike
+                </button>
+                <button class="nav-btn" data-section="others">
+                    <i class="fas fa-users-cog"></i>
+                    Ostali uporabniki
+                </button>
+                <button class="nav-btn admin-only" data-section="users" style="display: none;">
+                    <i class="fas fa-users"></i>
+                    Upravljanje uporabnikov
+                </button>
+                <button class="nav-btn admin-superuser" data-section="chore-templates" style="display: none;">
+                    <i class="fas fa-list-alt"></i>
+                    Predloge opravil
+                </button>
+                <button class="nav-btn admin-superuser" data-section="manage-rewards" style="display: none;">
+                    <i class="fas fa-cog"></i>
+                    Upravljanje nagrad
+                </button>
+                <button class="nav-btn admin-superuser" data-section="assign" style="display: none;">
+                    <i class="fas fa-user-plus"></i>
+                    Dodeljevanje
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboardSection" class="content-section active">
+                <h2>Nadzorna plošča</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="completedToday">0</h3>
+                            <p>Opravljeno danes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="pendingChores">0</h3>
+                            <p>Čakajoča opravila</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalRewards">0</h3>
+                            <p>Odkupljenih nagrad</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="recent-activity">
+                    <h3>Nedavna aktivnost</h3>
+                    <div id="recentChores" class="activity-list">
+                        <!-- Recent chores will be loaded here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chores Section -->
+            <section id="choresSection" class="content-section">
+                <div class="section-header">
+                    <h2>Moja opravila</h2>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">Vsa</button>
+                        <button class="filter-btn" data-filter="pending">Čakajoča</button>
+                        <button class="filter-btn" data-filter="completed">Opravljena</button>
+                        <button class="filter-btn" data-filter="overdue">Zapadla</button>
+                    </div>
+                </div>
+                <div id="choresList" class="chores-list">
+                    <!-- Chores will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Rewards Section -->
+            <section id="rewardsSection" class="content-section">
+                <div class="section-header">
+                    <h2>Trgovina z nagradami</h2>
+                </div>
+                <div class="rewards-grid" id="rewardsGrid">
+                    <!-- Rewards will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Statistics Section -->
+            <section id="statisticsSection" class="content-section">
+                <div class="section-header">
+                    <h2>Statistike</h2>
+                    <div class="stats-period-buttons">
+                        <button class="filter-btn active" data-period="week">Teden</button>
+                        <button class="filter-btn" data-period="month">Mesec</button>
+                        <button class="filter-btn" data-period="year">Leto</button>
+                    </div>
+                </div>
+                
+                <div class="statistics-container">
+                    <!-- My Stats Overview -->
+                    <div class="my-stats-section">
+                        <h3>Moje statistike</h3>
+                        <div class="stats-overview">
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                                <div class="stat-info">
+                                    <h3 id="statsCompleted">0</h3>
+                                    <p>Opravljenih</p>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                                <div class="stat-info">
+                                    <h3 id="statsPending">0</h3>
+                                    <p>Na čakanju</p>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-coins"></i></div>
+                                <div class="stat-info">
+                                    <h3 id="statsPoints">0</h3>
+                                    <p>Točk</p>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-hands-helping"></i></div>
+                                <div class="stat-info">
+                                    <h3 id="statsHelped">0</h3>
+                                    <p>Pomagal drugim</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Leaderboard -->
+                    <div class="leaderboard-section">
+                        <h3>🏆 Lestvica dosežkov</h3>
+                        <div id="leaderboard" class="leaderboard">
+                            <!-- Leaderboard will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Category Breakdown -->
+                    <div class="stats-details">
+                        <div class="stats-by-category">
+                            <h3>Po kategorijah</h3>
+                            <div id="categoryStats" class="category-stats-list">
+                                <!-- Category stats will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Charts -->
+                    <div class="advanced-charts">
+                        <h3>📊 Napredne analize</h3>
+                        
+                        <!-- Chart Tabs -->
+                        <div class="chart-tabs">
+                            <button class="filter-btn active" data-chart="trend">Trend točk</button>
+                            <button class="filter-btn" data-chart="categories">Kategorije</button>
+                            <button class="filter-btn" data-chart="productivity">Produktivnost</button>
+                            <button class="filter-btn" data-chart="heatmap">Aktivnostni koledar</button>
+                            <button class="filter-btn" data-chart="performance">Performance</button>
+                        </div>
+
+                        <!-- Chart Container -->
+                        <div class="chart-container">
+                            <!-- Points Trend Chart -->
+                            <div id="trendChart" class="chart-section active">
+                                <div class="chart-header">
+                                    <h4>📈 Trend pridobivanja točk</h4>
+                                    <p>Prikaz napredka skozi čas</p>
+                                </div>
+                                <canvas id="pointsTrendChart"></canvas>
+                            </div>
+
+                            <!-- Categories Chart -->
+                            <div id="categoriesChart" class="chart-section">
+                                <div class="chart-header">
+                                    <h4>🎯 Razdelitev po kategorijah</h4>
+                                    <p>Katere kategorije opravil najpogosteje opravljaš</p>
+                                </div>
+                                <canvas id="categoryPieChart"></canvas>
+                            </div>
+
+                            <!-- Productivity Chart -->
+                            <div id="productivityChart" class="chart-section">
+                                <div class="chart-header">
+                                    <h4>⚡ Produktivnost po dnevih</h4>
+                                    <p>V katerih dnevih si najbolj produktiven</p>
+                                </div>
+                                <canvas id="weeklyProductivityChart"></canvas>
+                            </div>
+
+                            <!-- Activity Heatmap -->
+                            <div id="heatmapChart" class="chart-section">
+                                <div class="chart-header">
+                                    <h4>🔥 Aktivnostni koledar</h4>
+                                    <p>Tvoja aktivnost v zadnjih 90 dneh</p>
+                                </div>
+                                <div id="activityHeatmap" class="heatmap-container">
+                                    <!-- Heatmap will be generated here -->
+                                </div>
+                            </div>
+
+                            <!-- Performance Analytics -->
+                            <div id="performanceChart" class="chart-section">
+                                <div class="chart-header">
+                                    <h4>⚡ Performance analiza</h4>
+                                    <p>Primerjava s povprečjem in analiza trendov</p>
+                                </div>
+                                <div class="performance-grid">
+                                    <div class="performance-metric">
+                                        <canvas id="completionRateChart"></canvas>
+                                        <h5>Stopnja dokončanja</h5>
+                                    </div>
+                                    <div class="performance-metric">
+                                        <canvas id="averagePointsChart"></canvas>
+                                        <h5>Povprečne točke na opravilo</h5>
+                                    </div>
+                                    <div class="performance-metric">
+                                        <canvas id="streakChart"></canvas>
+                                        <h5>Najdaljši niz</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Others Section -->
+            <section id="othersSection" class="content-section">
+                <div class="section-header">
+                    <h2>Ostali uporabniki</h2>
+                    <div class="others-tabs">
+                        <button class="filter-btn active" data-tab="pending">Na čakanju</button>
+                        <button class="filter-btn" data-tab="completed">Opravljeno</button>
+                    </div>
+                </div>
+
+                <div class="help-status" id="helpStatus">
+                    <!-- Status message will be shown here -->
+                </div>
+
+                <!-- Pending Chores Tab -->
+                <div id="othersPendingTab" class="others-tab-content active">
+                    <div id="othersChoresList" class="others-chores-list">
+                        <!-- Other users' pending chores will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Completed Chores Tab -->
+                <div id="othersCompletedTab" class="others-tab-content">
+                    <div class="completed-chores-controls">
+                        <select id="userSelect">
+                            <option value="">Izberi uporabnika...</option>
+                        </select>
+                        <div class="period-buttons">
+                            <button class="filter-btn active" data-period="week">Teden</button>
+                            <button class="filter-btn" data-period="month">Mesec</button>
+                            <button class="filter-btn" data-period="year">Leto</button>
+                        </div>
+                    </div>
+                    <div id="othersCompletedList" class="others-completed-list">
+                        <p style="text-align: center; color: var(--text-secondary);">Izberi uporabnika za prikaz opravljenih opravil.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Users Management Section -->
+            <section id="usersSection" class="content-section">
+                <h2>Upravljanje uporabnikov</h2>
+                
+                <div class="admin-panel">
+                    <form id="createUserForm" class="create-user-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="newUsername">Uporabniško ime</label>
+                                <input type="text" id="newUsername" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="newPassword">Geslo</label>
+                                <input type="password" id="newPassword" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="newFullName">Polno ime</label>
+                                <input type="text" id="newFullName" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="newEmail">Email</label>
+                                <input type="email" id="newEmail">
+                            </div>
+                            <div class="form-group">
+                                <label for="newRole">Vloga</label>
+                                <select id="newRole" required>
+                                    <option value="normaluser">Običajen uporabnik</option>
+                                    <option value="superuser">Super uporabnik</option>
+                                    <option value="admin">Administrator</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-user-plus"></i>
+                                    Ustvari uporabnika
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Users List -->
+                    <div class="users-list">
+                        <h4>Vsi uporabniki</h4>
+                        <div id="usersList" class="users-grid">
+                            <!-- Users will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chore Templates Section -->
+            <section id="chore-templatesSection" class="content-section">
+                <h2>Predloge opravil</h2>
+                
+                <div class="admin-panel">
+                    <form id="createChoreTemplateForm" class="create-chore-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="choreName">Ime opravila</label>
+                                <input type="text" id="choreName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="choreDescription">Opis</label>
+                                <input type="text" id="choreDescription">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="chorePoints">Točke</label>
+                                <input type="number" id="chorePoints" min="1" max="100" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="choreNegativePoints">Kazenske točke</label>
+                                <input type="number" id="choreNegativePoints" min="0" max="50" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="choreCategory">Kategorija</label>
+                                <select id="choreCategory" required>
+                                    <option value="čiščenje">🧹 Čiščenje</option>
+                                    <option value="kuhanje">🍳 Kuhanje</option>
+                                    <option value="pranje">👕 Pranje</option>
+                                    <option value="vrt">🌱 Vrt</option>
+                                    <option value="vzdrževanje">🔧 Vzdrževanje</option>
+                                    <option value="organizacija">📦 Organizacija</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="choreFrequency">Pogostost</label>
+                                <select id="choreFrequency" required>
+                                    <option value="once">Enkrat</option>
+                                    <option value="daily">Dnevno</option>
+                                    <option value="weekly">Tedensko</option>
+                                    <option value="monthly">Mesečno</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="choreTimeLimit">Časovna omejitev (dni)</label>
+                                <input type="number" id="choreTimeLimit" min="1" max="30" value="1">
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i>
+                                    Ustvari predlogo
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Templates List -->
+                    <div class="templates-list">
+                        <h4>Obstoječe predloge opravil</h4>
+                        <div id="choreTemplatesList" class="templates-grid">
+                            <!-- Templates will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Rewards Management Section -->
+            <section id="manage-rewardsSection" class="content-section">
+                <h2>Upravljanje nagrad</h2>
+                
+                <div class="admin-panel">
+                    <form id="createRewardForm" class="create-reward-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="rewardName">Ime nagrade</label>
+                                <input type="text" id="rewardName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="rewardDescription">Opis</label>
+                                <input type="text" id="rewardDescription">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="rewardCost">Cena (točke)</label>
+                                <input type="number" id="rewardCost" min="1" max="1000" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="rewardIcon">Ikona</label>
+                                <div class="icon-selector">
+                                    <input type="text" id="rewardIcon" placeholder="🎁" readonly onclick="openIconPicker('rewardIcon')">
+                                    <button type="button" class="icon-picker-btn" onclick="openIconPicker('rewardIcon')">
+                                        <i class="fas fa-palette"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="rewardCategory">Kategorija</label>
+                                <select id="rewardCategory">
+                                    <option value="zabava">🎬 Zabava</option>
+                                    <option value="hrana">🍕 Hrana</option>
+                                    <option value="aktivnosti">🏃 Aktivnosti</option>
+                                    <option value="nakupi">🛒 Nakupi</option>
+                                    <option value="splošno">🎁 Splošno</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i>
+                                    Ustvari nagrado
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Rewards List -->
+                    <div class="rewards-management-list">
+                        <h4>Obstoječe nagrade</h4>
+                        <div id="rewardsManagementList" class="rewards-management-grid">
+                            <!-- Rewards will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Assign Section -->
+            <section id="assignSection" class="content-section">
+                <div class="section-header">
+                    <h2>Dodeljevanje opravil</h2>
+                    <div class="assignment-tabs">
+                        <button class="filter-btn active" data-tab="oneTime">Enkratna opravila</button>
+                        <button class="filter-btn" data-tab="recurring">Ponavljajoča opravila</button>
+                    </div>
+                </div>
+                
+                <!-- One-time Assignment Tab -->
+                <div id="oneTimeAssignmentTab" class="assignment-tab-content active">
+                    <div class="assignment-container">
+                        <h3>Predloge enkratnih opravil</h3>
+                        <div id="assignmentTemplatesList" class="assignment-templates-grid">
+                            <!-- Templates for assignment will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recurring Assignment Tab -->
+                <div id="recurringAssignmentTab" class="assignment-tab-content">
+                    <div class="assignment-container">
+                        <div class="recurring-sections">
+                            <!-- Unassigned Recurring Templates -->
+                            <div class="unassigned-section">
+                                <h3>Še ne dodeljene ponavljajoče naloge</h3>
+                                <div id="unassignedTemplates" class="templates-grid">
+                                    <!-- Unassigned templates will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Already Assigned Recurring Templates -->
+                            <div class="assigned-section">
+                                <h3>Že dodeljene ponavljajoče naloge</h3>
+                                <div id="assignedTemplates" class="templates-grid">
+                                    <!-- Assigned templates will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal for notifications -->
+    <div id="notificationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="notificationTitle">Obvestilo</h3>
+                <button class="modal-close" onclick="closeNotificationModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="notificationMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeNotificationModal()">V redu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for editing chore templates -->
+    <div id="editChoreModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="editChoreModalTitle">Uredi predlogo opravila</h3>
+                <button class="modal-close" onclick="closeEditChoreModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editChoreForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editChoreName">Ime opravila</label>
+                            <input type="text" id="editChoreName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editChoreDescription">Opis</label>
+                            <input type="text" id="editChoreDescription">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editChorePoints">Točke</label>
+                            <input type="number" id="editChorePoints" min="1" max="100" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editChoreNegativePoints">Kazenske točke</label>
+                            <input type="number" id="editChoreNegativePoints" min="0" max="50">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editChoreCategory">Kategorija</label>
+                            <select id="editChoreCategory" required>
+                                <option value="čiščenje">🧹 Čiščenje</option>
+                                <option value="kuhanje">🍳 Kuhanje</option>
+                                <option value="pranje">👕 Pranje</option>
+                                <option value="vrt">🌱 Vrt</option>
+                                <option value="vzdrževanje">🔧 Vzdrževanje</option>
+                                <option value="organizacija">📦 Organizacija</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editChoreFrequency">Pogostost</label>
+                            <select id="editChoreFrequency" required>
+                                <option value="once">Enkrat</option>
+                                <option value="daily">Dnevno</option>
+                                <option value="weekly">Tedensko</option>
+                                <option value="monthly">Mesečno</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editChoreTimeLimit">Časovna omejitev (dni)</label>
+                            <input type="number" id="editChoreTimeLimit" min="1" max="30">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditChoreModal()">Prekliči</button>
+                <button class="btn btn-primary" onclick="saveChoreTemplate()">Shrani</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for editing rewards -->
+    <div id="editRewardModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="editRewardModalTitle">Uredi nagrado</h3>
+                <button class="modal-close" onclick="closeEditRewardModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editRewardForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editRewardName">Ime nagrade</label>
+                            <input type="text" id="editRewardName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editRewardDescription">Opis</label>
+                            <input type="text" id="editRewardDescription">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editRewardCost">Cena (točke)</label>
+                            <input type="number" id="editRewardCost" min="1" max="1000" required>
+                        </div>
+                                                    <div class="form-group">
+                                <label for="editRewardIcon">Ikona</label>
+                                <div class="icon-selector">
+                                    <input type="text" id="editRewardIcon" placeholder="🎁" readonly onclick="openIconPicker('editRewardIcon')">
+                                    <button type="button" class="icon-picker-btn" onclick="openIconPicker('editRewardIcon')">
+                                        <i class="fas fa-palette"></i>
+                                    </button>
+                                </div>
+                            </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editRewardCategory">Kategorija</label>
+                            <select id="editRewardCategory">
+                                <option value="zabava">🎬 Zabava</option>
+                                <option value="hrana">🍕 Hrana</option>
+                                <option value="aktivnosti">🏃 Aktivnosti</option>
+                                <option value="nakupi">🛒 Nakupi</option>
+                                <option value="splošno">🎁 Splošno</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditRewardModal()">Prekliči</button>
+                <button class="btn btn-primary" onclick="saveReward()">Shrani</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for assigning chores -->
+    <div id="assignChoreModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="assignChoreModalTitle">Dodeli opravilo</h3>
+                <button class="modal-close" onclick="closeAssignChoreModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="assignChoreForm">
+                    <div class="form-group">
+                        <label for="assignToUser">Dodeli uporabniku</label>
+                        <select id="assignToUser" required>
+                            <option value="">Izberite uporabnika</option>
+                            <!-- Users will be loaded here -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="assignDueDate">Rok za dokončanje (izbirno)</label>
+                        <input type="date" id="assignDueDate">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAssignChoreModal()">Prekliči</button>
+                <button class="btn btn-primary" onclick="assignChoreToUser()">Dodeli</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Icon Picker Modal -->
+    <div id="iconPickerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Izberite ikono</h3>
+                <button class="modal-close" onclick="closeIconPicker()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="icon-search">
+                    <input type="text" id="iconSearch" placeholder="Poiščite ikono..." oninput="filterIcons()">
+                </div>
+                <div class="icons-grid" id="iconsGrid">
+                    <!-- Icons will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Recurring Template Modal -->
+    <div id="assignRecurringModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="assignRecurringTitle">Dodeli ponavljajočo nalogo</h3>
+                <button class="modal-close" onclick="closeAssignRecurringModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="assignRecurringForm">
+                    <div class="form-group">
+                        <label for="recurringAssignToUser">Dodeli uporabniku</label>
+                        <select id="recurringAssignToUser" required>
+                            <option value="">Izberite uporabnika</option>
+                            <!-- Users will be loaded here -->
+                        </select>
+                    </div>
+                    <div class="recurring-info">
+                        <p><strong>Pomembno:</strong> To opravilo se bo avtomatično dodelilo vsakič, ko bo doseglo čas za ponavljanje.</p>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAssignRecurringModal()">Prekliči</button>
+                <button class="btn btn-primary" onclick="assignRecurringTemplate()">Dodeli</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html> 

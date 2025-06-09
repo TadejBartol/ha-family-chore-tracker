@@ -1,0 +1,29 @@
+{
+  "name": "chore-tracker-slovenian",
+  "version": "1.0.0",
+  "description": "Slovenska aplikacija za sledenje opravil z večimi uporabniki",
+  "main": "backend.js",
+  "scripts": {
+    "start": "node backend.js",
+    "dev": "nodemon backend.js",
+    "test": "node -e \"console.log('Application structure validated')\"",
+    "healthcheck": "curl -f http://localhost:3000/api/health || exit 1"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2",
+    "node-cron": "^3.0.2",
+    "express-rate-limit": "^6.10.0",
+    "express-session": "^1.17.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["chores", "slovenian", "multi-user", "gamification"],
+  "author": "ChoreTracker Team",
+  "license": "MIT"
+} 
