@@ -65,5 +65,11 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3000/api/health || exit 1
 
-# Run the app
-CMD ["./run.sh"] 
+# Set environment variables and run the app
+ENV DATABASE_PATH="/data/chores.db" \
+    PORT="3000" \
+    NODE_ENV="production" \
+    HASSIO="true"
+
+# Run the app directly
+CMD ["node", "backend.js"] 
